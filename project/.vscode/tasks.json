@@ -2,29 +2,21 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "type": "cppbuild",
-            "label": "C/C++: gcc.exe build active file",
-            "command": "C:\\msys64\\ucrt64\\bin\\gcc.exe",
+            "type": "shell",
+            "label": "DEBUG - Compilar para BIN",
+            "command": "cmd",
             "args": [
-                "-fdiagnostics-color=always",
-                "-Wall",
-                "-Wextra", 
-                "-g",
-                "${file}",
-                "-o",
-                "${workspaceFolder}\\bin\\${fileBasenameNoExtension}.exe"
+                "/c",
+                "echo === DIAGNÓSTICO === && echo Pasta atual: && cd && echo. && echo Pasta do workspace: && echo ${workspaceFolder} && echo. && echo Arquivo fonte: && echo ${file} && echo. && echo Destino: && echo ${workspaceFolder}\\bin\\${fileBasenameNoExtension}.exe && echo. && echo === COMPILANDO === && C:\\msys64\\ucrt64\\bin\\gcc.exe \"${file}\" -o \"${workspaceFolder}\\bin\\${fileBasenameNoExtension}.exe\" && echo. && echo === VERIFICANDO === && dir \"${workspaceFolder}\\bin\\\" && echo === FIM ==="
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
             },
-            "problemMatcher": [
-                "$gcc"
-            ],
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
-            "detail": "Compila para pasta bin/ - VERSÃO PERSONALIZADA"
+            "detail": "Versão de diagnóstico que mostra tudo"
         }
     ]
 }

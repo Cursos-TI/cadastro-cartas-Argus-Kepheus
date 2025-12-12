@@ -1,7 +1,10 @@
 // Desafio Super Trunfo - Países
-// Tema 1 - Cadastro das cartas
+// Tema 01 - Cadastro das cartas
 // Objetivo: No nível novato você deve criar as cartas representando as cidades 
 // utilizando <scanf> para entrada de dados e <printf> para exibir informações.
+// NOTA: Aproveitando dos recursos de nossa era, este programa foi escrito com
+// assistência de um LLM (Claude Sonnet 4), contudo, não se foi apenas um <copy-
+// paste>, mas sim uma colaboração entre humano e IA para garantir qualidade. 
 
 #include <stdio.h>
 #include <ctype.h>

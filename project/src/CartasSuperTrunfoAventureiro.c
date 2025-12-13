@@ -4,7 +4,7 @@
 // calculadas para cada carta cadastrada automaticamente: Densidade Populacional
 // e PIB per Capita (com base em dados de entrada).
 // NOTA: Aproveitando dos recursos de nossa era, este programa foi escrito com
-// assistência de um LLM (Claude Sonnet 4), contudo, não se foi apenas um <copy-
+// assistência de um LLM (Claude Sonnet 4), contudo, não foi apenas um <copy-
 // paste>, mas sim uma colaboração entre humano e IA para garantir qualidade. 
 
 #include <stdio.h>

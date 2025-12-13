@@ -3,7 +3,7 @@
 // Objetivo: Expandir o sistema do nível Aventureiro para incluir comparações
 // entre cartas, cálculo de Super Poder e manipulação de grandes números.
 // NOVIDADE: 30 cartas pré-preenchidas + 2 pelo usuário + sistema de comparação
-// MODIFICAÇÕES: Estados com nomes de vegetais, sem códigos, nomes padronizados
+// MODIFICAÇÕES: Estados A-H, cidades padronizadas como A01, B02, etc.
 // NOTA: Aproveitando dos recursos de nossa era, este programa foi escrito com
 // assistência de um LLM (Claude Sonnet 4), contudo, não foi apenas um <copy-
 // paste>, mas sim uma colaboração entre humano e IA para garantir qualidade.
@@ -13,25 +13,22 @@
 #include <string.h>
 
 // Constantes ——————————————————————————————————————————————————————————————————
-// É assumido que trata-se de apenas um país com 8 estados com 4 cidades cada,
-// onde o cadastro de cartas aborda apenas os dados de dito país. Os estados
-// agora têm nomes de vegetais para maior clareza e organização visual.
-#define NUM_ESTADOS 8               // 8 estados com nomes de vegetais —————————
+// É assumido que trata-se de apenas um país com 8 estados (A a H) e 4 cidades
+// cada um. As cidades têm nomes padronizados como A01, A02, B01, B02, etc.
+#define NUM_ESTADOS 8               // 8 estados de A a H ——————————————————————
 #define CIDADES_POR_ESTADO 4        // 4 cidades por estado ————————————————————
 #define TOTAL_CARTAS (NUM_ESTADOS * CIDADES_POR_ESTADO)  // Total: 32 cartas ———
 #define CARTAS_PREENCHIDAS 30       // 30 cartas pré-preenchidas automaticamente 
 #define CARTAS_USUARIO 2            // 2 cartas preenchidas pelo usuário ———————
-#define TAM_NOME_CIDADE 20          // Tamanho fixo para nomes das cidades —————
-#define TAM_NOME_ESTADO 15          // Tamanho fixo para nomes dos estados —————
+#define TAM_NOME_CIDADE 4           // Tamanho para A01, B02, etc. (3 chars + \0)
 
 // Protótipos/declaração das funções ————[corpo de cada função após o main()]———
-void           lerNomeCidade(char nomeCidade[]); // Lê nome da cidade ——————————
 unsigned long  lerPopulacao(); // Lê população como unsigned long int ——————————
 float          lerArea(); // Garante que área seja positiva maior que zero —————
 float          lerPIB(); // Garante que PIB seja um número positivo ————————————
 int            lerPontosTuristicos(); // Garante pontos turísticos positivos ———
 void           limparBuffer(); // Limpa buffer do teclado ——————————————————————
-void           padronizarNome(char nome[]); // Padroniza nome de tamanho fixo ——
+void           gerarNomeCidade(char nome[], char estado, int cidade); // A01, B02...
 // FUNÇÕES DO NÍVEL AVENTUREIRO (MANTIDAS) —————————————————————————————————————
 double calcularDensidadePopulacional(unsigned long populacao, float area);
 double calcularPIBPerCapita(float pib, unsigned long populacao);
@@ -40,16 +37,16 @@ void   preencherCartasAutomaticamente(  char nomesCidades[][TAM_NOME_CIDADE],
                                         unsigned long populacoes[],
                                         float areas[],
                                         float pibs[],
-                                        int pontosTuristicos[]);
-void   obterNomesEstados(   char estados[][TAM_NOME_ESTADO]);
+                                        int pontosTuristicos[]); // Preenche 30 cartas
 float  calcularSuperPoder(  unsigned long populacao,
                             float area,
                             float pib,
                             int pontosTuristicos,
                             double densidade,
-                            double pibPerCapita);
-void   exibirIndiceCartas(  char nomesCidades[][TAM_NOME_CIDADE]);
-int    obterEscolhaUsuario( int maxCartas);
+                            double pibPerCapita); // Calcula Super Poder ———————
+void   exibirIndiceCartas(  char nomesCidades[][TAM_NOME_CIDADE]); // Para comparação
+int    obterEscolhaUsuario( int maxCartas); // Primeira carta (qualquer) ———————
+int    obterEscolhaUsuarioExcluindo(int maxCartas, int cartaExcluida); // Segunda carta
 void   compararCartas(      int carta1,
                             int carta2,
                             char nomesCidades[][TAM_NOME_CIDADE],
@@ -59,8 +56,8 @@ void   compararCartas(      int carta1,
                             int pontosTuristicos[],
                             double densidades[], 
                             double pibsPerCapita[],
-                            float superPoderes[]);
-void   exibirTabelaEstado(  char nomeEstado[],
+                            float superPoderes[]); // Comparação de 2 cartas ———
+void   exibirTabelaEstado(  char estado,
                             int inicioIndice, 
                             char nomesCidades[][TAM_NOME_CIDADE], 
                             unsigned long populacoes[],
@@ -74,18 +71,17 @@ void   exibirTabelaEstado(  char nomeEstado[],
 // Função principal ————————————————————————————————————————————————————————————
 int main() {
     // Área para definição das variáveis =======================================
-    // Variáveis para armazenar os dados das cartas (32 cartas) ————————————————
-    char           nomesCidades[TOTAL_CARTAS][TAM_NOME_CIDADE]; // Tamanho único 
-    char           nomesEstados[NUM_ESTADOS][TAM_NOME_ESTADO]; // Nro. e nome ——   
-    unsigned long  populacoes[TOTAL_CARTAS]; // População (unsigned long) ——————
-    float          areas[TOTAL_CARTAS]; // Área em km² de cada cidade ——————————
-    float          pibs[TOTAL_CARTAS]; // PIB em bilhões de cada cidade ————————
-    int            pontosTuristicos[TOTAL_CARTAS]; // Nro. de pontos turísticos
+    // Variáveis para armazenar os dados das cartas (ADAPTADAS PARA NÍVEL MESTRE)
+    char           nomesCidades[TOTAL_CARTAS][TAM_NOME_CIDADE]; // A01, A02, B01, etc.
+    unsigned long  populacoes[TOTAL_CARTAS]; // População (unsigned long) ———————
+    float          areas[TOTAL_CARTAS]; // Área em km² de cada cidade ————————————
+    float          pibs[TOTAL_CARTAS]; // PIB em bilhões de cada cidade ——————————
+    int            pontosTuristicos[TOTAL_CARTAS]; // Número de pontos turísticos
     
-    // VARIÁVEIS CALCULADAS ————————————————————————————————————————————————————
+    // VARIÁVEIS CALCULADAS (NÍVEL AVENTUREIRO + MESTRE) ———————————————————————
     double densidadesPopulacionais[TOTAL_CARTAS]; // Densidade: hab/km² ————————
     double pibsPerCapita[TOTAL_CARTAS]; // PIB per capita em bilhões/hab ———————
-    float  superPoderes[TOTAL_CARTAS]; // NOVA: Super Poder de cada carta ——————
+    float  superPoderes[TOTAL_CARTAS]; // NOVA: Super Poder de cada carta ————————
 
     // Área para entrada de dados ============================================== 
     printf("============ BEM-VINDO AO SUPER TRUNFO - PAÍSES ============\n");
@@ -93,29 +89,36 @@ int main() {
     printf("- %d cartas pré-preenchidas automaticamente;\n", CARTAS_PREENCHIDAS);
     printf("- %d cartas para você cadastrar;\n", CARTAS_USUARIO);
     printf("- Cálculo automático de propriedades e Super Poder;\n");
-    printf("- Sistema de comparação entre cartas.\n");
+    printf("- Sistema de comparação entre cartas;\n");
+    printf("- Estados organizados de A a H com cidades numeradas;\n\n");
 
-    // Inicializa nomes dos estados (vegetais) e pré-preenche cartas ———————————
-    obterNomesEstados(nomesEstados);
+    // Pré-preenche 30 cartas automaticamente ————————————————————————————————
     preencherCartasAutomaticamente(nomesCidades, populacoes, areas, pibs, pontosTuristicos);
 
-    // Loop para as 2 últimas cartas (índices 30 e 31) —————————————————————————
-    for (int i = CARTAS_PREENCHIDAS; i < TOTAL_CARTAS; i++) {
-        // Calcula estado para as últimas cartas ———————————————————————————————
+    // Gera nomes para TODAS as cidades (incluindo as que o usuário preencherá) ——
+    for (int i = 0; i < TOTAL_CARTAS; i++) {
         int estado = i / CIDADES_POR_ESTADO;
+        int cidade = (i % CIDADES_POR_ESTADO) + 1;
+        char letraEstado = 'A' + estado;
         
-        printf("\n--- Cadastrando sua carta %d (Estado: %s) ---\n", 
-               i + 1, nomesEstados[estado]);
+        gerarNomeCidade(nomesCidades[i], letraEstado, cidade);
+    }
 
-        // Lê dados do usuário —————————————————————————————————————————————————
-        lerNomeCidade(nomesCidades[i]);
-        padronizarNome(nomesCidades[i]); // Padroniza para tamanho fixo ————————
+    // Loop para as 2 últimas cartas (índices 30 e 31) - APENAS DADOS NUMÉRICOS ——
+    for (int i = CARTAS_PREENCHIDAS; i < TOTAL_CARTAS; i++) {
+        int estado = i / CIDADES_POR_ESTADO;
+        char letraEstado = 'A' + estado;
+        
+        printf("\n--- Cadastrando sua carta %s (Estado: %c) ---\n", 
+               nomesCidades[i], letraEstado);
+
+        // Lê APENAS dados numéricos (nome já está predefinido) ————————————————
         populacoes[i] = lerPopulacao();
         areas[i] = lerArea();
         pibs[i] = lerPIB();
         pontosTuristicos[i] = lerPontosTuristicos();
 
-        printf("Carta %d cadastrada com sucesso no estado %s!\n", i + 1, nomesEstados[estado]);
+        printf("Carta %s cadastrada com sucesso no estado %c!\n", nomesCidades[i], letraEstado);
     }
 
     // Calcula propriedades derivadas para TODAS as cartas ————————————————————
@@ -141,9 +144,10 @@ int main() {
     
     // Exibe tabela de cada estado —————————————————————————————————————————————
     for (int estado = 0; estado < NUM_ESTADOS; estado++) {
+        char letraEstado = 'A' + estado;
         int inicioIndice = estado * CIDADES_POR_ESTADO;
         
-        exibirTabelaEstado(nomesEstados[estado], inicioIndice, nomesCidades,
+        exibirTabelaEstado(letraEstado, inicioIndice, nomesCidades,
                           populacoes, areas, pibs, pontosTuristicos,
                           densidadesPopulacionais, pibsPerCapita, superPoderes);
     }
@@ -157,12 +161,12 @@ int main() {
     printf("Escolha duas cartas para comparar:\n\n");
     exibirIndiceCartas(nomesCidades);
     
-    // Obtém escolhas do usuário ———————————————————————————————————————————————
+    // Obtém escolhas do usuário (EVITA CARTAS IGUAIS) ————————————————————————
     printf("\nEscolha a primeira carta (1-%d): ", TOTAL_CARTAS);
     int carta1 = obterEscolhaUsuario(TOTAL_CARTAS) - 1; // Converte para índice 0-31
-    
-    printf("Escolha a segunda carta (1-%d): ", TOTAL_CARTAS);
-    int carta2 = obterEscolhaUsuario(TOTAL_CARTAS) - 1; // Converte para índice 0-31
+
+    printf("Escolha a segunda carta (1-%d, diferente da carta %d): ", TOTAL_CARTAS, carta1 + 1);
+    int carta2 = obterEscolhaUsuarioExcluindo(TOTAL_CARTAS, carta1 + 1) - 1; // Exclui carta1
     
     // Realiza e exibe a comparação ————————————————————————————————————————————
     printf("\n===========================================================\n");
@@ -174,55 +178,18 @@ int main() {
 
     // Finalização do programa —————————————————————————————————————————————————
     printf("\n===========================================================\n");
+    printf("Sistema Super Trunfo!\n");
     printf("Total: %d cartas analisadas e comparadas\n", TOTAL_CARTAS);
-    printf("Estados organizados por vegetais: ");
-    for (int i = 0; i < NUM_ESTADOS; i++) {
-        printf("%s", nomesEstados[i]);
-        if (i < NUM_ESTADOS - 1) printf(", ");
-    }
-    printf("\nPropriedades calculadas: Densidade, PIB per Capita e Super Poder\n");
+    printf("Estados: A, B, C, D, E, F, G, H (8 estados)\n");
+    printf("Cidades: ##01, ##02, ##03, ##04 (4 por estado)\n");
+    printf("Propriedades calculadas: Densidade, PIB per Capita e Super Poder\n");
     printf("Obrigado por usar o Super Trunfo!\n");
     return 0;
 }
 
-// Função para ler nome da cidade (ADAPTADA PARA TAMANHO FIXO) —————————————————
-void lerNomeCidade(char nomeCidade[]) {
-    printf("Digite o nome da cidade (max %d chars): ", TAM_NOME_CIDADE - 1);
-    scanf(" %[^\n]", nomeCidade);
-}
-
-// NOVA FUNÇÃO: Padroniza nome para tamanho fixo ———————————————————————————————
-void padronizarNome(char nome[]) {
-    // Trunca se muito longo ———————————————————————————————————————————————————
-    if (strlen(nome) >= TAM_NOME_CIDADE) {
-        nome[TAM_NOME_CIDADE - 1] = '\0';
-    }
-    
-    // Preenche com espaços se muito curto ————————————————————————————————————
-    int len = strlen(nome);
-    for (int i = len; i < TAM_NOME_CIDADE - 1; i++) {
-        nome[i] = ' ';
-    }
-    nome[TAM_NOME_CIDADE - 1] = '\0';
-}
-
-// NOVA FUNÇÃO: Obtém nomes dos estados (vegetais) ————————————————————————————
-void obterNomesEstados(char estados[][TAM_NOME_ESTADO]) {
-    char vegetais[8][TAM_NOME_ESTADO] = {
-        "Alface        ",  // Estado 1
-        "Brocolis      ",  // Estado 2  
-        "Cenoura       ",  // Estado 3
-        "Damasco       ",  // Estado 4
-        "Espinafre     ",  // Estado 5
-        "Feijao        ",  // Estado 6
-        "Gengibre      ",  // Estado 7
-        "Hortelã       "   // Estado 8
-    };
-    
-    // Copia nomes padronizados ————————————————————————————————————————————————
-    for (int i = 0; i < NUM_ESTADOS; i++) {
-        strcpy(estados[i], vegetais[i]);
-    }
+// NOVA FUNÇÃO: Gera nome da cidade no formato A01, B02, etc. —————————————————
+void gerarNomeCidade(char nome[], char estado, int cidade) {
+    sprintf(nome, "%c%02d", estado, cidade);
 }
 
 // Função para ler população (ADAPTADA PARA UNSIGNED LONG) ————————————————————
@@ -334,22 +301,10 @@ double calcularPIBPerCapita(float pib, unsigned long populacao) {
     return (double)pib / (double)populacao;
 }
 
-// NOVA FUNÇÃO: Preenche 30 cartas automaticamente (SEM CÓDIGOS) ——————————————
+// NOVA FUNÇÃO: Preenche 30 cartas automaticamente (COM NOMES PADRONIZADOS) ———
 void preencherCartasAutomaticamente(char nomesCidades[][TAM_NOME_CIDADE], 
                                    unsigned long populacoes[], float areas[],
                                    float pibs[], int pontosTuristicos[]) {
-    
-    // Dados realistas de cidades brasileiras (PADRONIZADOS) ——————————————————
-    char nomes[30][TAM_NOME_CIDADE] = {
-        "São Paulo          ", "Rio de Janeiro     ", "Salvador           ", "Fortaleza          ",
-        "Belo Horizonte     ", "Manaus             ", "Curitiba           ", "Recife             ",
-        "Brasília           ", "Goiânia            ", "Belém              ", "Porto Alegre       ",
-        "Guarulhos          ", "Campinas           ", "São Luís           ", "São Gonçalo        ",
-        "Maceió             ", "Duque de Caxias    ", "Campo Grande       ", "Natal              ",
-        "Teresina           ", "São Bernardo       ", "Nova Iguaçu        ", "João Pessoa        ",
-        "Santo André        ", "Osasco             ", "Jaboatão           ", "Contagem           ",
-        "Ribeirão Preto     ", "Uberlândia         "
-    };
     
     // Dados de população (em habitantes) ——————————————————————————————————————
     unsigned long pops[30] = {
@@ -395,9 +350,8 @@ void preencherCartasAutomaticamente(char nomesCidades[][TAM_NOME_CIDADE],
         45, 32, 54, 43, 78, 89
     };
     
-    // Preenche os arrays com os dados (SEM CÓDIGOS) ——————————————————————————
+    // Preenche apenas os dados numéricos (nomes gerados depois) ———————————————
     for (int i = 0; i < CARTAS_PREENCHIDAS; i++) {
-        strcpy(nomesCidades[i], nomes[i]);
         populacoes[i] = pops[i];
         areas[i] = ars[i];
         pibs[i] = pibs_dados[i];
@@ -416,28 +370,25 @@ float calcularSuperPoder(unsigned long populacao, float area, float pib,
     return superPoder;
 }
 
-// NOVA FUNÇÃO: Exibe índice simplificado para escolha (SEM CÓDIGOS) ——————————
+// NOVA FUNÇÃO: Exibe índice simplificado para escolha de cartas ———————————————
 void exibirIndiceCartas(char nomesCidades[][TAM_NOME_CIDADE]) {
-    printf("%-4s %-20s  %-4s %-20s  %-4s %-20s\n", 
-           "Nº", "Cidade", "Nº", "Cidade", "Nº", "Cidade");
-    printf("%-4s %-20s  %-4s %-20s  %-4s %-20s\n",
-           "---", "--------------------", "---", "--------------------", 
-           "---", "--------------------");
+    // Cabeçalho mais limpo e organizado ———————————————————————————————————————
+    printf("%-3s %-4s    %-3s %-4s    %-3s %-4s    %-3s %-4s    %-3s %-4s    %-3s %-4s    %-3s %-4s    %-3s %-4s\n", 
+           "Nº", "Carta", "Nº", "Carta", "Nº", "Carta", "Nº", "Carta", 
+           "Nº", "Carta", "Nº", "Carta", "Nº", "Carta", "Nº", "Carta");
+           
+    printf("%-3s %-4s    %-3s %-4s    %-3s %-4s    %-3s %-4s    %-3s %-4s    %-3s %-4s    %-3s %-4s    %-3s %-4s\n",
+           "--", "----", "--", "----", "--", "----", "--", "----",
+           "--", "----", "--", "----", "--", "----", "--", "----");
     
-    // Exibe em 3 colunas para economizar espaço ——————————————————————————————
-    for (int i = 0; i < TOTAL_CARTAS; i += 3) {
-        printf("%-4d %-20s", i + 1, nomesCidades[i]);
-        
-        if (i + 1 < TOTAL_CARTAS) {
-            printf("  %-4d %-20s", i + 2, nomesCidades[i + 1]);
-        } else {
-            printf("  %-4s %-20s", "", "");
+    // Exibe dados em 8 colunas com formatação consistente —————————————————————
+    for (int i = 0; i < TOTAL_CARTAS; i += 8) {
+        for (int j = 0; j < 8 && (i + j) < TOTAL_CARTAS; j++) {
+            printf("%-3d %-4s", i + j + 1, nomesCidades[i + j]);
+            if (j < 7 && (i + j + 1) < TOTAL_CARTAS) {
+                printf("    "); // 4 espaços para separação entre colunas
+            }
         }
-        
-        if (i + 2 < TOTAL_CARTAS) {
-            printf("  %-4d %-20s", i + 3, nomesCidades[i + 2]);
-        }
-        
         printf("\n");
     }
 }
@@ -456,6 +407,27 @@ int obterEscolhaUsuario(int maxCartas) {
             printf("ERRO: Digite um numero entre 1 e %d!\n", maxCartas);
         }
     } while (escolha < 1 || escolha > maxCartas);
+    
+    return escolha;
+}
+
+// NOVA FUNÇÃO: Obtém escolha válida excluindo uma carta já selecionada ————————
+int obterEscolhaUsuarioExcluindo(int maxCartas, int cartaExcluida) {
+    int escolha;
+    
+    do {
+        if (scanf("%d", &escolha) != 1) {
+            printf("ERRO: Digite apenas numeros!\n");
+            limparBuffer();
+            escolha = 0; // Valor inválido para continuar loop ——————————————————
+        }
+        else if (escolha < 1 || escolha > maxCartas) {
+            printf("ERRO: Digite um numero entre 1 e %d!\n", maxCartas);
+        }
+        else if (escolha == cartaExcluida) {
+            printf("ERRO: Você já escolheu a carta %d! Escolha uma carta diferente.\n", cartaExcluida);
+        }
+    } while (escolha < 1 || escolha > maxCartas || escolha == cartaExcluida);
     
     return escolha;
 }
@@ -504,30 +476,30 @@ void compararCartas(int carta1, int carta2, char nomesCidades[][TAM_NOME_CIDADE]
            (totalVitoriasCarta1 > 3) ? nomesCidades[carta1] : nomesCidades[carta2]);
 }
 
-// Função para exibir tabela (ADAPTADA SEM CÓDIGOS E COM NOMES DE VEGETAIS) ———
-void exibirTabelaEstado(char nomeEstado[], int inicioIndice, 
+// Função para exibir tabela (ADAPTADA COM NOMES PADRONIZADOS) ————————————————
+void exibirTabelaEstado(char estado, int inicioIndice, 
                        char nomesCidades[][TAM_NOME_CIDADE], 
                        unsigned long populacoes[], float areas[], float pibs[], 
                        int pontosTuristicos[], double densidades[], 
                        double pibsPerCapita[], float superPoderes[]) {
     
-    printf("\n========== ESTADO %s - TABELA RESUMO ==========\n", nomeEstado);
+    printf("\n========== ESTADO %c - TABELA RESUMO ==========\n", estado);
     
-    // Cabeçalho da tabela (SEM CÓDIGOS) ———————————————————————————————————————
-    printf("%-20s %-12s %-10s %-12s %-8s %-12s %-12s %-12s\n",
-           "Cidade", "Pop.(hab)", "Area(km²)", "PIB(bi)", "Pontos",
+    // Cabeçalho da tabela ————————————————————————————————————————————————————
+    printf("%-5s %-12s %-10s %-12s %-8s %-12s %-12s %-12s\n",
+           "Carta", "Pop.(hab)", "Area(km²)", "PIB(bi)", "Pontos",
            "Densidade", "PIB pc(R$)", "SuperPoder");
     
-    printf("%-20s %-12s %-10s %-12s %-8s %-12s %-12s %-12s\n",
-           "--------------------", "------------", "----------", 
-           "------------", "--------", "------------", "------------", "------------");
+    printf("%-5s %-12s %-10s %-12s %-8s %-12s %-12s %-12s\n",
+           "-----", "------------", "----------", "------------", "--------", 
+           "------------", "------------", "------------");
 
-    // Dados das 4 cidades do estado (SEM CÓDIGOS) ————————————————————————————
+    // Dados das 4 cidades do estado ——————————————————————————————————————————
     for (int i = 0; i < CIDADES_POR_ESTADO; i++) {
         int indice = inicioIndice + i;
         
-        printf("%-20s %-12lu %-10.2f %-12.2f %-8d %-12.2f %-12.2e %-12.2f\n",
-               nomesCidades[indice],               // Nome da cidade (padronizado)
+        printf("%-5s %-12lu %-10.2f %-12.2f %-8d %-12.2f %-12.2e %-12.2f\n",
+               nomesCidades[indice],               // A01, A02, etc.
                populacoes[indice],                 // População (unsigned long) —
                areas[indice],                      // Área —————————————————————
                pibs[indice],                       // PIB ——————————————————————

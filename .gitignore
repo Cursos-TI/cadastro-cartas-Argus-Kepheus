@@ -1,13 +1,9 @@
 # Arquivos executáveis
-bin/*.exe
 bin/*.out
 
 # Arquivos de objeto
 *.o
 *.obj
-
-# Arquivos temporários do VS Code
-.vscode/settings.json
 
 # Arquivos do sistema
 .DS_Store
